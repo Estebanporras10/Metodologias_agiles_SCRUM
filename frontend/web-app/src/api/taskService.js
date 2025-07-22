@@ -67,12 +67,31 @@ export async function deleteDeletedTask(id) {
 }
 
 export async function emptyTrash() {
-  const response = await fetch(`${API_URL}/tasks/trash`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to empty trash');
+  try {
+    console.log('Enviando petición DELETE a:', `${API_URL}/tasks/trash/empty`);
+    
+    const response = await fetch(`${API_URL}/tasks/trash/empty`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    console.log('Status de la respuesta:', response.status);
+    console.log('Response OK:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error del servidor:', errorText);
+      throw new Error(`Failed to empty trash: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('Resultado del vaciado:', result);
+    return result;
+  } catch (error) {
+    console.error('Error en emptyTrash:', error);
+    throw error;
   }
-  return response.json();
 }
 

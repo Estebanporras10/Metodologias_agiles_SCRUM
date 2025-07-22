@@ -108,6 +108,19 @@ router.post('/trash/restore/:id', async (req, res) => {
     }
 });
 
+// Empty the trash (delete all deleted tasks) - DEBE IR ANTES que /trash/:id
+router.delete('/trash/empty', async (req, res) => {
+    try {
+        console.log('Intentando vaciar papelera...');
+        const result = await DeletedTask.deleteMany({});
+        console.log('Tareas eliminadas:', result.deletedCount);
+        res.json({ message: 'Trash emptied', deletedCount: result.deletedCount });
+    } catch (error) {
+        console.error('Error vaciando papelera:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Permanently delete a deleted task by ID
 router.delete('/trash/:id', async (req, res) => {
     try {
@@ -116,16 +129,6 @@ router.delete('/trash/:id', async (req, res) => {
             return res.status(404).json({ message: 'Deleted task not found' });
         }
         res.json({ message: 'Task permanently deleted' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// Empty the trash (delete all deleted tasks)
-router.delete('/trash', async (req, res) => {
-    try {
-        await DeletedTask.deleteMany({});
-        res.json({ message: 'Trash emptied' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
