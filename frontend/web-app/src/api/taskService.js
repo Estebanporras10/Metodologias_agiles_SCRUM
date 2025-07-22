@@ -53,7 +53,7 @@ export async function deleteTask(id) {
 }
 
 export async function getDeletedTasks() {
-  const response = await fetch(`${API_URL}/tasks/trash/all`);
+  const response = await fetch(`${API_URL}/tasks/trash`);
   if (!response.ok) {
     throw new Error('Failed to fetch deleted tasks');
   }

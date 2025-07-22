@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/task');
+const DeletedTask = require('../models/deletedTask');
 
 // Create a new task
 router.post('/', async (req, res) => {
@@ -27,6 +28,16 @@ router.get('/', async (req, res) => {
     try {
         const tasks = await Task.find();
         res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// List all deleted tasks - DEBE IR ANTES que /:id
+router.get('/trash', async (req, res) => {
+    try {
+        const deletedTasks = await DeletedTask.find().sort({ deletedAt: -1 });
+        res.json(deletedTasks);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -73,9 +84,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Delete a task by ID (move to DeletedTask collection)
-const DeletedTask = require('../models/deletedTask');
-
 router.delete('/:id', async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
@@ -96,16 +104,6 @@ router.delete('/:id', async (req, res) => {
         await deletedTask.save();
         await Task.findByIdAndDelete(req.params.id);
         res.json({ message: 'Task moved to trash' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// List all deleted tasks
-router.get('/trash/all', async (req, res) => {
-    try {
-        const deletedTasks = await DeletedTask.find().sort({ deletedAt: -1 });
-        res.json(deletedTasks);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
