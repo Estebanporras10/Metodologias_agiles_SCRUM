@@ -3,10 +3,12 @@ import './App.css';
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { createTask, getTasks, deleteTask } from './api/taskService';
+import TrashScreen from './TrashScreen';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 function App() {
+  const [showTrash, setShowTrash] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({
     title: '',
@@ -94,6 +96,8 @@ function App() {
     }
   };
 
+  if (showTrash) return <TrashScreen onBack={() => setShowTrash(false)} />;
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -179,7 +183,9 @@ function App() {
             </button>
           </form>
         </section>
-
+        <button className="open-trash-btn" onClick={() => setShowTrash(true)}>
+          Ver Papelera
+        </button>
         <section className="task-list">
           <h2>Tareas</h2>
           <div className="tasks-container">
