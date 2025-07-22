@@ -22,7 +22,8 @@ const taskSchema = new mongoose.Schema({
         default: 'media'
     },
     dueDate: {
-        type: Date
+        type: Date,
+        required: false
     },
     createdAt: {
         type: Date,

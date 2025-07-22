@@ -81,7 +81,8 @@ body {
 
 .form-group input,
 .form-group textarea,
-.form-group select {
+.form-group select,
+.form-group .form-control {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
@@ -128,11 +129,14 @@ button:disabled {
 
 /* Task List */
 .task-list {
-  background-color: var(--card-background);
+  flex: 3 1 0%;
+  background: var(--background-color);
   padding: 2rem;
   border-radius: 8px;
   box-shadow: var(--shadow);
-  color: var(--text-primary);
+  min-width: 0;
+  max-width: 75vw;
+  overflow-x: auto;
 }
 
 .task-list h2 {
@@ -152,6 +156,10 @@ button:disabled {
   transition: transform 0.3s ease;
   color: var(--text-primary);
   border: 1px solid #e0e0e0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .task-card:hover {
@@ -178,6 +186,8 @@ button:disabled {
   font-size: 0.875rem;
   font-weight: 500;
   color: white;
+  min-width: 80px;
+  text-align: center;
 }
 
 .task-description {
@@ -191,26 +201,39 @@ button:disabled {
   align-items: center;
   font-size: 0.875rem;
   color: var(--text-primary);
+  margin-top: 0.5rem;
+}
+
+.priority-and-dates {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dates-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.task-date,
+.task-due-date {
+  display: block;
+  color: var(--text-secondary);
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  .app-main {
-    grid-template-columns: 1fr;
-  }
-
-  .task-card {
-    padding: 1rem;
-  }
-
-  .task-header {
+@media (max-width: 900px) {
+  .main-container {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 
-  .task-meta {
-    flex-direction: column;
-    gap: 0.5rem;
+  .sidebar,
+  .task-list {
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
   }
 }
 

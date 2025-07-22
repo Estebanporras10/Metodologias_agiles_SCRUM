@@ -4,6 +4,8 @@ import './App.css';
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { createTask, getTasks } from './api/taskService';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -11,7 +13,8 @@ function App() {
     title: '',
     description: '',
     status: 'pendiente',
-    priority: 'media'
+    priority: 'media',
+    dueDate: null
   });
   const [loading, setLoading] = useState(false);
 
@@ -144,6 +147,24 @@ function App() {
               </select>
             </div>
 
+            <div className="form-group">
+              <label htmlFor="dueDate">Fecha de Finalización</label>
+              <DatePicker
+                selected={newTask.dueDate}
+                onChange={(date) => setNewTask(prev => ({
+                  ...prev,
+                  dueDate: date
+                }))}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Selecciona una fecha"
+                className="form-control"
+                selectsStart
+                startDate={newTask.dueDate}
+                endDate={new Date()}
+                minDate={new Date()}
+              />
+            </div>
+
             <button type="submit" disabled={loading}>
               {loading ? 'Creando...' : 'Crear Tarea'}
             </button>
@@ -166,15 +187,24 @@ function App() {
                 </div>
                 <p className="task-description">{task.description}</p>
                 <div className="task-meta">
-                  <span
-                    className="priority-badge"
-                    style={{ backgroundColor: getPriorityColor(task.priority) }}
-                  >
-                    {task.priority}
-                  </span>
-                  <span className="task-date">
-                    {new Date(task.createdAt).toLocaleDateString('es-ES')}
-                  </span>
+                  <div className="priority-and-dates">
+                    <span
+                      className="priority-badge"
+                      style={{ backgroundColor: getPriorityColor(task.priority) }}
+                    >
+                      {task.priority}
+                    </span>
+                    <div className="dates-container">
+                      <span className="task-date">
+                        Creada: {new Date(task.createdAt).toLocaleDateString('es-ES')}
+                      </span>
+                      {task.dueDate && (
+                        <span className="task-due-date">
+                          Fecha límite: {new Date(task.dueDate).toLocaleDateString('es-ES')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
