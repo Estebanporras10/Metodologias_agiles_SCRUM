@@ -1,9 +1,8 @@
-import logo from './logo.svg';
 import './App.css';
 
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { createTask, getTasks } from './api/taskService';
+import { createTask, getTasks, deleteTask } from './api/taskService';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -28,6 +27,16 @@ function App() {
       setTasks(tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    if (!window.confirm('¿Seguro que deseas eliminar esta tarea?')) return;
+    try {
+      await deleteTask(id);
+      setTasks(tasks.filter((task) => task._id !== id));
+    } catch (error) {
+      alert('Error eliminando la tarea');
     }
   };
 
@@ -205,6 +214,9 @@ function App() {
                       )}
                     </div>
                   </div>
+                  <span className="delete-icon" title="Eliminar tarea" onClick={() => handleDeleteTask(task._id)}>
+  🗑️
+</span>
                 </div>
               </div>
             ))}
