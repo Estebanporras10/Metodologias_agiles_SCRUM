@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
-import { createTask, getTasks, deleteTask } from './api/taskService';
+import { createTask, getTasks, deleteTask, updateTask } from './api/taskService';
 
 // Importar componentes
 import Navigation from './components/Navigation';
@@ -68,6 +68,16 @@ function App() {
     }
   };
 
+  const handleUpdateTask = async (taskId, taskData) => {
+    try {
+      await updateTask(taskId, taskData);
+      fetchTasks(); // Recargar la lista de tareas
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -111,6 +121,7 @@ function App() {
             tasks={tasks}
             onDeleteTask={handleDeleteTask}
             onRefresh={fetchTasks}
+            onUpdateTask={handleUpdateTask}
           />
         );
       case 'trash':

@@ -45,6 +45,34 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Update a task by ID
+router.put('/:id', async (req, res) => {
+    try {
+        const { title, description, status, priority, dueDate } = req.body;
+        
+        const updatedTask = await Task.findByIdAndUpdate(
+            req.params.id,
+            {
+                title,
+                description,
+                status,
+                priority,
+                dueDate,
+                updatedAt: new Date()
+            },
+            { new: true, runValidators: true }
+        );
+        
+        if (!updatedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        
+        res.json(updatedTask);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
 // Delete a task by ID (move to DeletedTask collection)
 const DeletedTask = require('../models/deletedTask');
 

@@ -52,7 +52,7 @@ function TaskForm({ newTask, setNewTask, onSubmit, loading }) {
               onChange={handleInputChange}
             >
               <option value="pendiente">Pendiente</option>
-              <option value="en_progreso">En Progreso</option>
+              <option value="en progreso">En Progreso</option>
               <option value="completada">Completada</option>
             </select>
           </div>

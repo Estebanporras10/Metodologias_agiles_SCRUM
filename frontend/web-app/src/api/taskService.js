@@ -28,6 +28,20 @@ export async function getTasks() {
   return response.json();
 }
 
+export async function updateTask(id, taskData) {
+  const response = await fetch(`${API_URL}/tasks/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(taskData),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update task');
+  }
+  return response.json();
+}
+
 export async function deleteTask(id) {
   const response = await fetch(`${API_URL}/tasks/${id}`, {
     method: 'DELETE',

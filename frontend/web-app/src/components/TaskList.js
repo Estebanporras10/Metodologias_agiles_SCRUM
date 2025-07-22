@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../css/TaskList.css';
+import EditTaskModal from './EditTaskModal';
 
-function TaskList({ tasks, onDeleteTask, onRefresh }) {
+function TaskList({ tasks, onDeleteTask, onRefresh, onUpdateTask }) {
+  const [editingTask, setEditingTask] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingTask(null);
+  };
+
+  const handleSaveTask = async (taskId, taskData) => {
+    if (onUpdateTask) {
+      await onUpdateTask(taskId, taskData);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pendiente':
@@ -32,7 +52,7 @@ function TaskList({ tasks, onDeleteTask, onRefresh }) {
     switch (status) {
       case 'pendiente':
         return 'Pendiente';
-      case 'en_progreso':
+      case 'en progreso':
         return 'En Progreso';
       case 'completada':
         return 'Completada';
@@ -119,6 +139,13 @@ function TaskList({ tasks, onDeleteTask, onRefresh }) {
             
             <div className="task-actions">
               <button 
+                className="edit-btn"
+                onClick={() => handleEditTask(task)}
+                title="Editar tarea"
+              >
+                ✏️ Editar
+              </button>
+              <button 
                 className="delete-btn"
                 onClick={() => onDeleteTask(task._id)}
                 title="Eliminar tarea"
@@ -129,6 +156,13 @@ function TaskList({ tasks, onDeleteTask, onRefresh }) {
           </div>
         ))}
       </div>
+      
+      <EditTaskModal
+        task={editingTask}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveTask}
+      />
     </div>
   );
 }
