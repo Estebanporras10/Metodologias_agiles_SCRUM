@@ -134,7 +134,7 @@ router.post('/trash/restore/:id', async (req, res) => {
     }
 });
 
-// Empty the trash (delete all deleted tasks) - DEBE IR ANTES que /trash/:id
+// Empty the trash (delete all deleted tasks)
 router.delete('/trash/empty', async (req, res) => {
     try {
         console.log('Intentando vaciar papelera...');

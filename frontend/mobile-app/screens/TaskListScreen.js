@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,12 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  TextInput,
+  Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const colors = {
   primary: '#2596be',
@@ -31,6 +35,45 @@ export default function TaskListScreen({
   navigation 
 }) {
   const [refreshing, setRefreshing] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [filterDate, setFilterDate] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedPriority, setSelectedPriority] = useState(null);
+
+  // Filtrar tareas basado en nombre y fecha límite
+  const filteredTasks = useMemo(() => {
+    let filtered = tasks;
+
+    // Filtrar por texto de búsqueda
+    if (searchText.trim()) {
+      filtered = filtered.filter(task =>
+        task.title.toLowerCase().includes(searchText.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    // Filtrar por fecha límite (desde hoy hasta la fecha seleccionada)
+    if (filterDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Inicio del día actual
+      const selectedDate = new Date(filterDate);
+      selectedDate.setHours(23, 59, 59, 999); // Final del día seleccionado
+      
+      filtered = filtered.filter(task => {
+        if (!task.dueDate) return false;
+        const taskDueDate = new Date(task.dueDate);
+        return taskDueDate >= today && taskDueDate <= selectedDate;
+      });
+    }
+
+    // Filtrar por prioridad
+    if (selectedPriority) {
+      filtered = filtered.filter(task => task.priority === selectedPriority);
+    }
+
+    return filtered;
+  }, [tasks, searchText, filterDate, selectedPriority]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -61,6 +104,33 @@ export default function TaskListScreen({
 
   const handleEditTask = (task) => {
     navigation.navigate('EditTask', { task, onUpdateTask });
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFilterDate(selectedDate);
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchText('');
+    setFilterDate(null);
+    setSelectedPriority(null);
+    setShowFilterModal(false);
+  };
+
+  const formatFilterDate = (date) => {
+    if (!date) return 'Seleccionar fecha límite';
+    
+    const today = new Date();
+    const formattedDate = date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    
+    return `Hasta ${formattedDate}`;
   };
 
   const getStatusColor = (status) => {
@@ -182,27 +252,181 @@ export default function TaskListScreen({
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="clipboard-outline" size={80} color={colors.textSecondary} />
-      <Text style={styles.emptyTitle}>No hay tareas</Text>
+      <Text style={styles.emptyTitle}>
+        {searchText || filterDate ? 'No se encontraron tareas' : 'No hay tareas'}
+      </Text>
       <Text style={styles.emptySubtitle}>
-        Crea tu primera tarea usando el botón "+" en la pestaña Agregar
+        {searchText || filterDate 
+          ? 'Intenta ajustar los filtros de búsqueda'
+          : 'Crea tu primera tarea usando el botón "+" en la pestaña Agregar'
+        }
       </Text>
     </View>
+  );
+
+  const renderFilterModal = () => (
+    <Modal
+      visible={showFilterModal}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowFilterModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filtrar Tareas</Text>
+            <TouchableOpacity
+              onPress={() => setShowFilterModal(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>Buscar por nombre:</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Escribe el nombre de la tarea..."
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>Tareas hasta fecha límite:</Text>
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons name="calendar" size={20} color={colors.primary} />
+              <Text style={styles.dateButtonText}>
+                {formatFilterDate(filterDate)}
+              </Text>
+            </TouchableOpacity>
+            {filterDate && (
+              <TouchableOpacity
+                style={styles.clearDateButton}
+                onPress={() => setFilterDate(null)}
+              >
+                <Text style={styles.clearDateText}>Limpiar fecha</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>Filtrar por prioridad:</Text>
+            <View style={styles.priorityFilterContainer}>
+              {['alta', 'media', 'baja'].map(priority => (
+                <TouchableOpacity
+                  key={priority}
+                  style={[
+                    styles.priorityOption,
+                    selectedPriority === priority && styles.priorityOptionSelected,
+                    { backgroundColor: getPriorityColor(priority) + '40' }
+                  ]}
+                  onPress={() => setSelectedPriority(selectedPriority === priority ? null : priority)}
+                >
+                  <Text style={[
+                    styles.priorityOptionText,
+                    selectedPriority === priority && styles.priorityOptionTextSelected
+                  ]}>
+                    {getPriorityText(priority)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.clearButton]}
+              onPress={clearFilters}
+            >
+              <Text style={styles.clearButtonText}>Limpiar Filtros</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.applyButton]}
+              onPress={() => setShowFilterModal(false)}
+            >
+              <Text style={styles.applyButtonText}>Aplicar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={filterDate || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+        />
+      )}
+    </Modal>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mis Tareas</Text>
-        <Text style={styles.subtitle}>
-          {tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}
-        </Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>Mis Tareas</Text>
+            <Text style={styles.subtitle}>
+              {filteredTasks.length} de {tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}
+              {(searchText || filterDate) && ' (filtradas)'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Ionicons 
+              name="filter" 
+              size={20} 
+              color={searchText || filterDate ? colors.primary : colors.textSecondary} 
+            />
+          </TouchableOpacity>
+        </View>
+        
+        {(searchText || filterDate || selectedPriority) && (
+          <View style={styles.activeFilters}>
+            {searchText && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>Texto: {searchText}</Text>
+                <TouchableOpacity onPress={() => setSearchText('')}>
+                  <Ionicons name="close-circle" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filterDate && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>Fecha: {formatFilterDate(filterDate)}</Text>
+                <TouchableOpacity onPress={() => setFilterDate(null)}>
+                  <Ionicons name="close-circle" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {selectedPriority && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>
+                  Prioridad: {getPriorityText(selectedPriority)}
+                </Text>
+                <TouchableOpacity onPress={() => setSelectedPriority(null)}>
+                  <Ionicons name="close-circle" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <FlatList
-        data={tasks}
+        data={filteredTasks}
         renderItem={renderTaskItem}
         keyExtractor={(item) => item._id}
-        contentContainerStyle={tasks.length === 0 ? styles.emptyContainer : styles.listContainer}
+        contentContainerStyle={filteredTasks.length === 0 ? styles.emptyContainer : styles.listContainer}
         ListEmptyComponent={renderEmptyState}
         refreshControl={
           <RefreshControl
@@ -214,6 +438,8 @@ export default function TaskListScreen({
         }
         showsVerticalScrollIndicator={false}
       />
+      
+      {renderFilterModal()}
     </View>
   );
 }
@@ -228,6 +454,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+  },
+  activeFilters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+    gap: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '500',
   },
   title: {
     fontSize: 24,
@@ -347,5 +603,130 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginLeft: 4,
+  },
+  // Estilos del modal de filtros
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  filterSection: {
+    marginBottom: 20,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: colors.background,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: colors.background,
+    gap: 8,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  clearDateButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  clearDateText: {
+    fontSize: 14,
+    color: colors.primary,
+    textDecorationLine: 'underline',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  clearButton: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+  },
+  applyButton: {
+    backgroundColor: colors.primary,
+  },
+  clearButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  priorityFilterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  priorityOption: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  priorityOptionSelected: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  priorityOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  priorityOptionTextSelected: {
+    color: colors.textPrimary,
+    fontWeight: '600',
   },
 });

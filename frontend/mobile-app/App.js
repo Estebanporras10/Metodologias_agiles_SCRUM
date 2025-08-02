@@ -29,6 +29,7 @@ const colors = {
   textPrimary: '#000000',
   textSecondary: '#333333',
   white: '#ffffff',
+  purple: '#667eea',
 };
 
 function TaskStack({ tasks, onDeleteTask, onUpdateTask, onRefresh, loading }) {
@@ -184,7 +185,7 @@ export default function App() {
             borderTopWidth: 2,
           },
           headerStyle: {
-            backgroundColor: colors.primary,
+            backgroundColor: colors.purple,
           },
           headerTintColor: colors.white,
           headerTitleStyle: {
