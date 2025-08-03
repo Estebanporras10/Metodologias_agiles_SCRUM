@@ -132,4 +132,3 @@ DELETE /api/tasks/trash/empty
 - Los endpoints están pensados para integrarse fácilmente con un frontend móvil o web.
 - El backend es fácilmente ampliable para nuevas funciones (etiquetas, usuarios, etc).
 
-¿Dudas o mejoras? ¡Abre un issue o contribuye! 🚀
