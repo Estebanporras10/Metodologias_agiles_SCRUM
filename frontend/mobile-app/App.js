@@ -11,9 +11,13 @@ import TaskFormScreen from './screens/TaskFormScreen';
 import TaskListScreen from './screens/TaskListScreen';
 import TrashScreen from './screens/TrashScreen';
 import EditTaskScreen from './screens/EditTaskScreen';
+import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
 
 // API Service
 import * as taskService from './services/taskService';
+
+// Notifications Hook
+import { useNotifications } from './hooks/useNotifications';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -68,11 +72,29 @@ export default function App() {
   const [deletedTasks, setDeletedTasks] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Hook de notificaciones
+  const {
+    isInitialized,
+    hasPermissions,
+    scheduleTaskNotifications,
+    scheduleTaskNotification,
+    cancelTaskNotification,
+    sendTestNotification
+  } = useNotifications();
+
   // Cargar tareas al iniciar la app
   useEffect(() => {
     fetchTasks();
     fetchDeletedTasks();
   }, []);
+
+  // Programar notificaciones cuando las tareas cambien
+  useEffect(() => {
+    if (isInitialized && hasPermissions && tasks.length > 0) {
+      console.log('📅 Programando notificaciones para', tasks.length, 'tareas');
+      scheduleTaskNotifications(tasks);
+    }
+  }, [tasks, isInitialized, hasPermissions]);
 
   const fetchTasks = async () => {
     try {
@@ -240,6 +262,7 @@ export default function App() {
             />
           )}
         </Tab.Screen>
+
       </Tab.Navigator>
     </NavigationContainer>
   );
