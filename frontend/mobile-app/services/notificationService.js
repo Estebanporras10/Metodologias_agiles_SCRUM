@@ -79,8 +79,17 @@ class NotificationService {
   // Programar notificación para una tarea específica
   async scheduleTaskNotification(task) {
     try {
+      // Usar _id (MongoDB) o id según lo que esté disponible
+      const taskId = task.id || task._id;
+      console.log('🔍 Programando notificación para tarea:', { id: taskId, title: task.title, dueDate: task.dueDate });
+      
       if (!task.dueDate) {
         console.log('Tarea sin fecha límite, no se programa notificación');
+        return null;
+      }
+      
+      if (!taskId) {
+        console.error('❌ Error: task.id y task._id son undefined o null:', task);
         return null;
       }
 
@@ -91,10 +100,6 @@ class NotificationService {
       const notificationTime = new Date(dueDate.getTime() - (24 * 60 * 60 * 1000));
       let trigger = null;
       let body = '';
-
-      // Cancelar notificación existente si la hay
-      await this.cancelTaskNotification(task.id);
-
       const msRestantes = dueDate - now;
       const horasRestantes = msRestantes / (60 * 60 * 1000);
       const minutosRestantes = Math.floor((msRestantes % (60 * 60 * 1000)) / (60 * 1000));
@@ -108,28 +113,37 @@ class NotificationService {
           body = `"${task.title}" vence en ${minutosRestantes} minuto(s)`;
         }
         console.log(`Notificación inmediata para tarea "${task.title}" (faltan menos de 24h)`);
+        // NO cancelar notificaciones previas para trigger inmediato
       } else {
         // No notificar si faltan más de 24h o ya venció
+        // Pero si en el futuro quieres programar una notificación, aquí sí cancelarías la previa
+        // await this.cancelTaskNotification(task.id);
         console.log('No se programa notificación (faltan más de 24h o ya venció)');
         return null;
       }
 
       // Programar nueva notificación
+      const timestamp = Date.now();
+      const identifier = `task_${taskId}_${timestamp}`;
+      
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: '⏰ Tarea próxima a vencer',
           body,
           data: { 
-            taskId: task.id,
+            taskId: taskId,
             taskTitle: task.title,
             dueDate: task.dueDate,
-            type: 'task_reminder'
+            type: 'task_reminder',
+            timestamp
           },
           sound: 'default',
         },
         trigger,
-        identifier: `task_${task.id}`,
+        identifier,
       });
+      
+      console.log(`✅ Notificación enviada con ID: ${identifier}`);
       return notificationId;
     } catch (error) {
       console.error('Error programando notificación:', error);
@@ -151,11 +165,20 @@ class NotificationService {
   // Programar notificaciones para múltiples tareas
   async scheduleMultipleTaskNotifications(tasks) {
     const results = [];
+    let delayMs = 0; // Delay acumulativo para notificaciones inmediatas
+    
     for (const task of tasks) {
       if (!task.completed) { // Solo para tareas no completadas
+        // Agregar delay para notificaciones inmediatas
+        if (delayMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+        
         const notificationId = await this.scheduleTaskNotification(task);
         if (notificationId) {
-          results.push({ taskId: task.id, notificationId });
+          const taskId = task.id || task._id;
+          results.push({ taskId: taskId, notificationId });
+          delayMs += 500; // 500ms de delay entre cada notificación inmediata
         }
       }
     }

@@ -88,13 +88,13 @@ export default function App() {
     fetchDeletedTasks();
   }, []);
 
-  // Programar notificaciones cuando las tareas cambien
+  // Programar notificaciones solo al inicializar la app
   useEffect(() => {
     if (isInitialized && hasPermissions && tasks.length > 0) {
-      console.log('📅 Programando notificaciones para', tasks.length, 'tareas');
+      console.log('📅 Programando notificaciones iniciales para', tasks.length, 'tareas');
       scheduleTaskNotifications(tasks);
     }
-  }, [tasks, isInitialized, hasPermissions]);
+  }, [isInitialized, hasPermissions]); // Removido 'tasks' de las dependencias
 
   const fetchTasks = async () => {
     try {
@@ -119,8 +119,12 @@ export default function App() {
 
   const handleCreateTask = async (taskData) => {
     try {
-      await taskService.createTask(taskData);
+      const newTask = await taskService.createTask(taskData);
       await fetchTasks();
+      // Programar notificación solo para la nueva tarea
+      if (isInitialized && hasPermissions) {
+        await scheduleTaskNotification(newTask);
+      }
     } catch (error) {
       console.error('Error creating task:', error);
       throw error;
@@ -129,13 +133,22 @@ export default function App() {
 
   const handleUpdateTask = async (taskId, taskData) => {
     try {
+      // Obtener la tarea original antes de actualizar
+      const originalTasks = await taskService.getTasks();
+      const originalTask = originalTasks.find(t => t._id === taskId || t.id === taskId);
       await taskService.updateTask(taskId, taskData);
       await fetchTasks();
+      // Si cambió la fecha límite, reprogramar notificación
+      if (isInitialized && hasPermissions && originalTask && originalTask.dueDate !== taskData.dueDate) {
+        const updatedTask = { ...originalTask, ...taskData };
+        await scheduleTaskNotification(updatedTask);
+      }
     } catch (error) {
       console.error('Error updating task:', error);
       throw error;
     }
   };
+
 
   const handleDeleteTask = async (taskId) => {
     try {
